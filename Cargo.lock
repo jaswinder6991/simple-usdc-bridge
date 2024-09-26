@@ -2954,6 +2954,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "near-contract-standards"
+version = "5.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3b985c4df43237b6ae533a6451cfa13de1f12f79f7d6254ba376f0ccd017286"
+dependencies = [
+ "near-sdk",
+]
+
+[[package]]
 name = "near-crypto"
 version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3786,6 +3795,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "omni-transaction"
+version = "0.1.0"
+source = "git+https://github.com/edsonalcala/omni-transaction-rs.git?branch=development#b67efacd0cb3d1eefaafe57f71ea9b638aff7c98"
+dependencies = [
+ "borsh",
+ "bs58 0.5.1",
+ "hex 0.4.3",
+ "near-sdk",
+ "rlp",
+ "serde",
+ "serde-big-array",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4550,6 +4573,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "rlp"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb919243f34364b6bd2fc10ef797edbfa75f33c252e7998527479c6d6b47e1ec"
+dependencies = [
+ "bytes",
+ "rustc-hex",
+]
+
+[[package]]
 name = "rust_decimal"
 version = "1.36.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4827,6 +4860,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde-big-array"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11fc7cc2c76d73e0f27ee52abbd64eec84d46f370c88371120433196934e4b7f"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "serde_derive"
 version = "1.0.210"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5062,8 +5104,11 @@ checksum = "e3a9fe34e3e7a50316060351f37187a3f546bce95496156754b601a5fa71b76e"
 name = "simple-usdc-bridge"
 version = "0.1.0"
 dependencies = [
+ "hex 0.4.3",
+ "near-contract-standards",
  "near-sdk",
  "near-workspaces",
+ "omni-transaction",
  "serde_json",
  "tokio",
 ]
