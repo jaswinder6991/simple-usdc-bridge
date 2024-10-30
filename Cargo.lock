@@ -6340,6 +6340,8 @@ dependencies = [
  "near-sdk",
  "near-workspaces",
  "omni-transaction",
+ "schemars",
+ "serde",
  "serde_json",
  "tokio",
 ]

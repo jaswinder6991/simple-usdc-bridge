@@ -1,0 +1,17 @@
+{
+  "name": "airdrop",
+  "version": "1.0.0",
+  "description": "",
+  "main": "run.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bn.js": "^5.2.1",
+    "ethers": "^6.13.4",
+    "near-api-js": "^5.0.1"
+  }
+}

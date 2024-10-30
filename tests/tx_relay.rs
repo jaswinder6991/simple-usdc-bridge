@@ -14,6 +14,9 @@ use omni_transaction::transaction_builder::{
 use omni_transaction::types::EVM;
 //use std::str::FromStr;
 
+//100000000000000000 0.1
+//20000000000000000
+
 #[tokio::test]
 async fn test_send_raw_transaction_created_with_omnitransactionbuilder_for_evm() -> Result<()> {
     // Sepolia testnet provider
@@ -33,10 +36,17 @@ async fn test_send_raw_transaction_created_with_omnitransactionbuilder_for_evm()
         .value(0)
         .input(data)
         .max_priority_fee_per_gas(1_500_000_000)
-        .max_fee_per_gas(30_000_000_000)
-        .gas_limit(65_000)
+        .max_fee_per_gas(20_000_000_000)
+        .gas_limit(500_000)
         .chain_id(11155111) // replace with Sepolia chain ID
         .build();
+
+    //10000000000000000
+    //1950000000000000
+
+    //0.001
+
+    //0.000195
 
     // Encode the transaction
     //let omni_evm_tx_encoded = omni_evm_tx.build_for_signing();
@@ -44,8 +54,8 @@ async fn test_send_raw_transaction_created_with_omnitransactionbuilder_for_evm()
     // Create OmniSignature from the MPC contract response
     let signature_omni = OmniSignature {
         v: 0, // 27 + recovery_id (1 in this case)
-        r: hex::decode("7A75F04B9E46C4AA72765B6DF9EAE73671713B2FE1786CBBC382B86100D4B846").unwrap(),
-        s: hex::decode("4DAAEC4B53A3E6AA99175FCD3091A84CA8E7522BF479CA16384A3B5EC6B186FE").unwrap(),
+        r: hex::decode("71E5F3EE59A6CF387DD0D292454680B7B8E48E1B85FD40E03DE306F80498AD23").unwrap(),
+        s: hex::decode("5D137EA74234FA722AB0BDE5304A7754F0D685A72D8EEB24C8B7F7BBF783ED9D").unwrap(),
     };
 
     let omni_evm_tx_encoded_with_signature = omni_evm_tx.build_with_signature(&signature_omni);
@@ -75,4 +85,9 @@ fn construct_erc20_transfer_data(to: [u8; 20], amount: u128) -> Vec<u8> {
     data
 }
 
-//from near multichain - 0xd6cEefFa721575c53181346b6cC49647167085c7
+// USDC treasury account Eth: 0x349f2bc4138b0f66871f8d734cef2e1b6c36ddc9 // signer-dev
+// 0xd6ceeffa721575c53181346b6cc49647167085c7 // signer-prod
+
+// succesful tx where treasury had USDC as well
+//---- test_send_raw_transaction_created_with_omnitransactionbuilder_for_evm stdout ----
+//Transaction sent successfully. Hash: PendingTransaction { tx_hash: 0x8e7de1833d1b5b5d09d2393123295a04b92e494fa9f629cd4b316f8f6a824a50, confirmations: 1, state: PendingTxState { state: "InitialDelay" } }
