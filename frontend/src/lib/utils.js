@@ -89,12 +89,14 @@ export async function sendRawTransaction(signedTxBytes) {
       const tx = await provider.broadcastTransaction(signedTxHex);
       console.log('Transaction sent successfully. Hash:', tx.hash);
       
-      // Wait for the transaction to be mined
-      console.log('Waiting for transaction to be mined...');
-      const receipt = await tx.wait();
-      console.log('Transaction mined. Block number:', receipt.blockNumber);
-
-      return tx.hash;
+      // Return both the hash and confirmation promise
+      return {
+        hash: tx.hash,
+        confirmation: tx.wait().then(receipt => {
+          console.log('Transaction mined. Block number:', receipt.blockNumber);
+          return receipt;
+        })
+      };
   } catch (error) {
       console.error('Failed to send transaction. Error details:', error);
       if (error.reason) console.error('Error reason:', error.reason);

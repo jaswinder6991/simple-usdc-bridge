@@ -7,8 +7,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ArrowLeftRight, Loader2 } from "lucide-react"
 import { NearContext } from "@/context"
 import { USDC_CONTRACT_ID_NEAR, USDC_CONTRACT_ID_ETH, BRIDGE_CONTRACT_ID } from "@/config"
-import { getBridgeRequest, sendRawTransaction } from "../lib/utils"
+import { getBridgeRequest, sendRawTransaction, getProvider } from "../lib/utils"
 const { ethers } = require('ethers');
+
 
 export default function LandingPage() {
   const { signedAccountId, wallet } = useContext(NearContext)
@@ -18,6 +19,8 @@ export default function LandingPage() {
   const [ethAddress, setEthAddress] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [txHash, setTxHash] = useState(null)
+  const [nearTxHash, setNearTxHash] = useState(null)
+  const [isConfirmed, setIsConfirmed] = useState(false)
   const [error, setError] = useState(null)
   const [balances, setBalances] = useState({
     nearBalance: null,
@@ -98,12 +101,19 @@ export default function LandingPage() {
         method: "get_latest_signed_tx"
       })
 
-      // Send to Ethereum
-      const hash = await sendRawTransaction(signedTxBytes)
+      // Send to Ethereum and get both hash and confirmation promise
+      const { hash, confirmation } = await sendRawTransaction(signedTxBytes)
       setTxHash(hash)
+      setIsConfirmed(false)
       
-      // Refresh balances
-      await fetchBalances()
+      // Wait for confirmation in background
+      confirmation.then(async () => {
+        setIsConfirmed(true)
+        await fetchBalances()
+      }).catch(err => {
+        console.error("Error during confirmation:", err)
+        setError("Transaction sent but confirmation failed. Please check explorer for status.")
+      })
     } catch (err) {
       console.error("Failed to complete transaction:", err)
       setError(err.message || "Failed to complete transaction. Please try again.")
@@ -117,6 +127,7 @@ export default function LandingPage() {
     setIsLoading(true)
     setError(null)
     setTxHash(null)
+    setNearTxHash(null)
 
     try {
       const formattedEthAddress = ethAddress.startsWith('0x') 
@@ -126,17 +137,45 @@ export default function LandingPage() {
       const bridgeRequest = await getBridgeRequest(formattedEthAddress)
       //console.log("Bridge request:", bridgeRequest)
       
-      //Call NEAR contract
-      const result = await wallet.callMethod({
-        contractId: USDC_CONTRACT_ID_NEAR,
-        method: "ft_transfer_call",
-        args: { 
-          amount: (Number(amount) * 1e6).toString(), // Convert to USDC decimals
-          receiver_id: BRIDGE_CONTRACT_ID,
-          msg: JSON.stringify(bridgeRequest)
-        },
-        deposit: "1",
-      })
+      let nearResult;
+      try {
+        //Call NEAR contract
+        nearResult = await wallet.callMethod({
+          contractId: USDC_CONTRACT_ID_NEAR,
+          method: "ft_transfer_call",
+          args: { 
+            amount: (Number(amount) * 1e6).toString(), // Convert to USDC decimals
+            receiver_id: BRIDGE_CONTRACT_ID,
+            msg: JSON.stringify(bridgeRequest)
+          },
+          deposit: "1",
+        })
+        
+        // Set NEAR transaction hash for normal (non-timeout) case
+        if (nearResult?.transaction?.hash) {
+          setNearTxHash(nearResult.transaction.hash)
+        }
+      } catch (e) {
+        // Handle timeout case where transaction was submitted but RPC timed out
+        if (e.context?.transactionHash) {
+          const timeoutHash = e.context.transactionHash;
+          console.log(`Transaction submitted but timed out. Hash: ${timeoutHash}`);
+          setNearTxHash(timeoutHash);
+          
+          // Wait for 15 seconds
+          await new Promise(resolve => setTimeout(resolve, 15000));
+          
+          // Check transaction status
+          nearResult = await wallet.getTransactionResult(timeoutHash);
+          console.log("Transaction completed after timeout:", nearResult);
+        } else {
+          throw e; // Re-throw if it's not a timeout error
+        }
+      }
+
+      // If we got here, the NEAR transaction was successful (either directly or after timeout)
+      // Now we can complete the Ethereum part
+      await completeTransaction();
     } catch (err) {
       console.error("Transaction failed:", err)
       setError(err.message || "Transaction failed. Please try again.")
@@ -222,18 +261,45 @@ export default function LandingPage() {
                   </Alert>
                 )}
 
-                {txHash && (
+                {(nearTxHash || txHash) && (
                   <Alert>
                     <AlertDescription>
-                      Transaction successful! Hash: 
-                      <a 
-                        href={`https://sepolia.etherscan.io/tx/${txHash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="ml-1 text-blue-600 hover:underline"
-                      >
-                        {txHash.slice(0, 8)}...{txHash.slice(-6)}
-                      </a>
+                      {nearTxHash && !txHash && (
+                        <>
+                          NEAR Transaction sent! 
+                          <a 
+                            href={`https://explorer.${wallet.networkId}.near.org/transactions/${nearTxHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-1 text-blue-600 hover:underline"
+                          >
+                            {nearTxHash.slice(0, 8)}...{nearTxHash.slice(-6)}
+                          </a>
+                          <div className="text-sm text-gray-500 mt-1 flex items-center">
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Processing NEAR transaction...
+                          </div>
+                        </>
+                      )}
+                      {txHash && (
+                        <>
+                          ETH Transaction {isConfirmed ? 'confirmed!' : 'sent!'} 
+                          <a 
+                            href={`https://sepolia.etherscan.io/tx/${txHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-1 text-blue-600 hover:underline"
+                          >
+                            {txHash.slice(0, 8)}...{txHash.slice(-6)}
+                          </a>
+                          {!isConfirmed && (
+                            <div className="text-sm text-gray-500 mt-1 flex items-center">
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Waiting for confirmation...
+                            </div>
+                          )}
+                        </>
+                      )}
                     </AlertDescription>
                   </Alert>
                 )}
